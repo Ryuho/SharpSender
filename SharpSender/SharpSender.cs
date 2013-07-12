@@ -125,7 +125,7 @@ class Utility
         Console.WriteLine("  -tcp, -udp, -icmp, -icmpv6, -ip <int>, -ethertype <int>");
         Console.WriteLine("  -sPort <int>, -dPort <int>, -code <int>, -type <int>");
         Console.WriteLine("possible other args: ");
-        Console.WriteLine("  -adapter <adapter name>, -payload <string|hex>");
+        Console.WriteLine("  -h, -adapter <adapter name>, -payload <string|hex>");
         Console.WriteLine("=========================");
         Console.WriteLine("Printing list of available adapters:");
         foreach (string line in GetListOfAdapters())
@@ -298,7 +298,7 @@ class Param
                 Console.WriteLine("Another arg was expected after " + curStr);
                 Environment.Exit(1);
             }
-            catch (System.FormatException e)
+            catch (FormatException)
             {
                 Console.WriteLine("The address specified for " + curStr + " was not in the correct format.");
                 Environment.Exit(1);
@@ -352,18 +352,22 @@ class Param
             if (sIP == null)
             {
                 sIP = IPAddress.Parse("255.255.255.255");
+                Console.WriteLine("Set sIP to: " + sIP.ToString());
             }
             if (dIP == null)
             {
                 dIP = IPAddress.Parse("255.255.255.255");
+                Console.WriteLine("Set dIP to: " + dIP.ToString());
             }
             if (sMAC == null)
             {
                 sMAC = PhysicalAddress.Parse("FF-FF-FF-FF-FF-FF");
+                Console.WriteLine("Set sMAC to: " + sMAC.ToString());
             }
             if (dMAC == null)
             {
                 dMAC = PhysicalAddress.Parse("FF-FF-FF-FF-FF-FF");
+                Console.WriteLine("Set dMAC to: " + dMAC.ToString());
             }
         }
         // if we picked an actual adapter
@@ -393,10 +397,12 @@ class Param
             if (sMAC == null)
             {
                 sMAC = dev.MacAddress;
+                Console.WriteLine("Set sMAC to: " + sMAC.ToString());
             }
             if (dMAC == null)
             {
                 dMAC = PhysicalAddress.Parse("FF-FF-FF-FF-FF-FF");
+                Console.WriteLine("Set dMAC to: " + dMAC.ToString());
             }
             dev.Close();
         }
@@ -574,7 +580,7 @@ namespace SharpSender
                 {
                     //these are the default adapter names that are commonly used
                     adapterPicked = Utility.GetFriendlyName(curDev).Contains("Local Area Connection");
-                    adapterPicked |= Utility.GetFriendlyName(curDev).Contains("Ethernet adapter Ethernet");
+                    adapterPicked |= Utility.GetFriendlyName(curDev).Contains("Ethernet");
                 }
                 else
                 {
@@ -587,11 +593,16 @@ namespace SharpSender
                 }
                 else if (adapterPicked)
                 {
-                    Console.WriteLine("More than one interface was matched, sending packet to all interfaces.");
                     dev = null;
                     break;
                 }
             }
+
+            if(dev == null)
+            {
+                Console.WriteLine("Couldn't find one adapter to send packet on, sending it to all adapters.");
+            }
+
 
             param.UpdateDevInfo(dev);
 
