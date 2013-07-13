@@ -3,25 +3,33 @@ SharpSender
 
 Commandline based packet sender written in C# using Pcap/SharpPcap/WinPcap.
 
-Please install WinPcap 4.x to run this tool.
+This tool requires the following: 
+ - WinPcap 4.x
+ - .NET Framework 3.5
 
+This tool is tested to work with Windows XP up to Windows 8.
+ 
 Download the binary by downloading this zip: https://raw.github.com/Ryuho/SharpSender/master/SharpSender.zip
 
-    usage: SharpSender.exe -dip fe80::1:2:3 -icmpv6 -type 10 -code 10
-           SharpSender.exe -dMAC FF:EE:CC:BB:AA:99 -ethertype 2049
-           SharpSender.exe -dip 8.8.8.8 -udp -dport 9090 -sport 8888 -payload "hello world!"
-
-        >SharpSender.exe -h
+        SharpSender.exe -h
         usage: SharpSender.exe -icmp -dIP 127.0.0.1 -type 0 -code 0
+               SharpSender.exe -adapter 1 -dip fe80::1 -v6EH 0,43,17
+               SharpSender.exe -adapter "Ether" -dMAC ee:ff:22:11:11:33 -ethertype 0xCAFE
+
         possible address args:
          -dIP <address>, -sIP <address>, -dMAC <address>, -sMAC <address>
+
         possible protocol args:
           -tcp, -udp, -icmp, -icmpv6, -ip <int>, -ethertype <int>
           -sPort <int>, -dPort <int>, -code <int>, -type <int>
+          -v6EH <int,int,int...>
+
         possible other args:
-          -h, -adapter <adapter name>, -payload <string|hex>
-        =========================
+          -h, -adapter <string|int>, -payload <string|hex>
+
         Printing list of available adapters:
-           VMware Network Adapter VMnet1
-           VMware Network Adapter VMnet8
-           Local Area Connection
+        0:   Local Area Connection 2
+        1:   Wireless Network Connection
+        2:   Local Area Connection 3
+        3:   Bluetooth Network Connection
+        4:   Local Area Connection

@@ -118,19 +118,88 @@ class Utility
     public static void PrintHelp()
     {
         Console.WriteLine("usage: SharpSender.exe -icmp -dIP 127.0.0.1 -type 0 -code 0");
+        Console.WriteLine("       SharpSender.exe -adapter 1 -dip fe80::1 -v6EH 0,43,17");
+        Console.WriteLine(@"       SharpSender.exe -adapter ""Ether"" -dMAC ee:ff:22:11:11:33 -ethertype 0xCAFE");
+        Console.WriteLine("");
         Console.WriteLine("possible address args: ");
         Console.WriteLine(" -dIP <address>, -sIP <address>, -dMAC <address>, -sMAC <address>");
+        Console.WriteLine("");
         Console.WriteLine("possible protocol args: ");
         Console.WriteLine("  -tcp, -udp, -icmp, -icmpv6, -ip <int>, -ethertype <int>");
         Console.WriteLine("  -sPort <int>, -dPort <int>, -code <int>, -type <int>");
+        Console.WriteLine("  -v6EH <int,int,int...>");
+        Console.WriteLine("");
         Console.WriteLine("possible other args: ");
-        Console.WriteLine("  -h, -adapter <adapter name>, -payload <string|hex>");
-        Console.WriteLine("=========================");
+        Console.WriteLine("  -h, -adapter <string|int>, -payload <string|hex>");
+        Console.WriteLine("");
         Console.WriteLine("Printing list of available adapters:");
+        int temp = 0;
         foreach (string line in GetListOfAdapters())
         {
-            Console.WriteLine("  " + line);
+            Console.WriteLine(temp + ":  " + line);
+            temp++;
         }
+    }
+
+    public static ICaptureDevice PickDevice(Param param)
+    {
+        // Decide on a device to send packets on
+        CaptureDeviceList devices = CaptureDeviceList.Instance;
+        ICaptureDevice dev = null;
+
+        //if adapter was picked by index number, pick that
+        int pickedIndex = -1;
+        bool isNumeric = int.TryParse(param.adapter, out pickedIndex);
+
+        if (isNumeric)
+        {
+            IEnumerator<ICaptureDevice> capEnumerator = devices.GetEnumerator();
+            int devIndex = 0;
+            while (capEnumerator.MoveNext())
+            {
+                if (pickedIndex == devIndex)
+                {
+                    dev = capEnumerator.Current;
+                    Console.WriteLine("Picked the adapter: " + GetFriendlyName(dev));
+                    break;
+                }
+                devIndex++;
+            }
+        }
+        else
+        {
+            foreach (ICaptureDevice curDev in devices)
+            {
+                bool adapterPicked = false;
+                if (param.adapter == null)
+                {
+                    //these are the default adapter names that are commonly used
+                    adapterPicked = Utility.GetFriendlyName(curDev).Contains("Local Area Connection");
+                    adapterPicked |= Utility.GetFriendlyName(curDev).Contains("Ethernet");
+                }
+                else
+                {
+                    adapterPicked = Utility.GetFriendlyName(curDev).Contains(param.adapter);
+                }
+
+                if (dev == null && adapterPicked)
+                {
+                    dev = curDev;
+                }
+                else if (adapterPicked)
+                {
+                    dev = null;
+                    break;
+                }
+            }
+        }
+
+        if (dev == null)
+        {
+            Console.WriteLine("Couldn't find one adapter to send packet on, sending it to all adapters.");
+        }
+
+        return dev;
     }
 }
 
@@ -148,10 +217,11 @@ class Param
     public PacketType packetType = PacketType.ICMP;
     public IPProtocolType IPProtocol = IPProtocolType.IP;
     public EthernetPacketType EtherTypeProtocol = (EthernetPacketType)0x0800;
-    public byte[] payload = {0, 255, 0 , 255 , 0};
-    public string adapterName = null;
+    public byte[] payload = new byte[64];
+    public string adapter = null;
+    public List<IPProtocolType> ExtentionHeader = new List<IPProtocolType>();
 
-    //constructor
+    //constructor, reads in the args
     public Param(string[] args)
     {
         for (int i = 0; i < args.Length;i++)
@@ -163,8 +233,26 @@ class Param
                 if (String.Compare(curStr, "-adapter", true) == 0)
                 {
                     string nextStr = args[++i];
-                    adapterName = nextStr;
-                    Console.WriteLine("Read in adapterName as: " + adapterName);
+                    adapter = nextStr;
+                    Console.WriteLine("Read in adapter as: " + adapter);
+                }
+                else if (String.Compare(curStr, "-v6EH", true) == 0)
+                {
+                    string nextStr = args[++i];
+                    string[] tempEHArray = nextStr.Split(',');
+                    //ExtentionHeader = 
+                        
+                    int[] tempInt = Array.ConvertAll(tempEHArray, int.Parse);
+                    foreach (int curInt in tempInt)
+                    {
+                        ExtentionHeader.Add((IPProtocolType)curInt);
+                    }
+                    packetType = PacketType.IP;
+                    IPProtocol = IPProtocolType.IPV6;
+                    
+                    Console.WriteLine("Read in -v6EH as: " + string.Join(",", tempEHArray));
+                    Console.WriteLine("Setting packetType as: " + packetType.ToString());
+                    Console.WriteLine("Setting IPProtocol as: " + IPProtocol.ToString());
                 }
                 else if (String.Compare(curStr, "-dMAC", true) == 0)
                 {
@@ -261,8 +349,8 @@ class Param
                 else if (String.Compare(curStr, "-adapter", true) == 0)
                 {
                     string nextStr = args[++i];
-                    adapterName = nextStr;
-                    Console.WriteLine("Read in -adapter as: " + adapterName);
+                    adapter = nextStr;
+                    Console.WriteLine("Read in -adapter as: " + adapter);
                 }
                 else if (String.Compare(curStr, "-ICMP", true) == 0)
                 {
@@ -330,9 +418,15 @@ class Param
             Environment.Exit(1);
         }
 
-        if (packetType == PacketType.ICMPv6 && dIP.ToString().Contains("."))
+        if (packetType == PacketType.ICMPv6 && (dIP == null || !dIP.ToString().Contains(":")))
         {
             Console.WriteLine("dIP needs to be IPv6 for ICMPv6 packets.");
+            Environment.Exit(1);
+        }
+
+        if (ExtentionHeader.Count != 0 && (dIP == null || !dIP.ToString().Contains(":")))
+        {
+            Console.WriteLine("dIP needs to be IPv6 for ExtensionHeader packets.");
             Environment.Exit(1);
         }
 
@@ -390,6 +484,12 @@ class Param
                         Console.WriteLine("Set sIP to: " + add.ToString());
                     }
                 }
+            }
+
+            if(sIP == null)
+            {
+                Console.WriteLine("The chosen adapter did not have a valid address");
+                Environment.Exit(1);
             }
 
             //fill out source mac if it is null
@@ -537,11 +637,53 @@ class PacketFactory
             else
             {
                 ret = new EthernetPacket(param.sMAC, param.dMAC, EthernetPacketType.IpV6);
-                IPv6Packet ipPacket = new IPv6Packet(param.sIP, param.dIP);
-                ipPacket.Protocol = param.IPProtocol;
-                ipPacket.PayloadData = param.payload;
-                ipPacket.UpdateCalculatedValues();
-                ret.PayloadPacket = ipPacket;
+
+                //if extension headers were not specified, just put the payload
+                if (param.ExtentionHeader.Count == 0)
+                {
+                    IPv6Packet ipPacket = new IPv6Packet(param.sIP, param.dIP);
+                    ipPacket.Protocol = param.IPProtocol;
+                    ipPacket.PayloadData = param.payload;
+                    ipPacket.PayloadLength = (ushort)param.payload.Length;
+                    ipPacket.UpdateCalculatedValues();
+                    ret.PayloadPacket = ipPacket;
+                }
+                else
+                {
+                    IPv6Packet ipPacket = new IPv6Packet(param.sIP, param.dIP);
+                    ipPacket.Protocol = (IPProtocolType)param.ExtentionHeader[0];
+
+                    int EHSize = param.ExtentionHeader.Count * 24;
+                    byte[] tempPayload = new byte[EHSize + param.payload.Length];
+                    param.payload.CopyTo(tempPayload, EHSize);
+
+                    int loc = 0;
+                    foreach (byte eh in param.ExtentionHeader)
+                    {
+                        tempPayload.SetValue((byte)eh, loc);
+                        tempPayload.SetValue((byte)2, loc+1);
+                        loc += 24;
+                    }
+
+                    //kind of a hack to make it so that UDP length is valid, TCP luckly did not need any tinkering
+                    IPProtocolType endEH = param.ExtentionHeader[param.ExtentionHeader.Count - 1];
+                    if (endEH == IPProtocolType.TCP)
+                    {
+
+                    }
+                    else if (endEH == IPProtocolType.UDP)
+                    {
+                        tempPayload.SetValue((byte)0x08, loc + 5);
+                        tempPayload.SetValue((byte)0x12, loc + 6);
+                        tempPayload.SetValue((byte)0x34, loc + 7);
+                    }
+
+                    ipPacket.PayloadData = tempPayload;
+                    ipPacket.PayloadLength = (ushort)tempPayload.Length;
+                    ipPacket.UpdateCalculatedValues();
+                    ret.PayloadPacket = ipPacket;
+                }
+                ret.UpdateCalculatedValues();
             }
         }
         else if(param.packetType == Param.PacketType.EtherType)
@@ -565,55 +707,26 @@ namespace SharpSender
     {
         static void Main(string[] args)
         {
-            //parse args
-            Param param = new Param(args);
-
-            // Decide on a device to send packets on
-            CaptureDeviceList devices = CaptureDeviceList.Instance;
-            ICaptureDevice dev = null;
-            foreach (ICaptureDevice curDev in devices)
-            {
-                bool adapterPicked = false;
-
-                if(param.adapterName == null)
-                {
-                    //these are the default adapter names that are commonly used
-                    adapterPicked = Utility.GetFriendlyName(curDev).Contains("Local Area Connection");
-                    adapterPicked |= Utility.GetFriendlyName(curDev).Contains("Ethernet");
-                }
-                else
-                {
-                    adapterPicked = Utility.GetFriendlyName(curDev).Contains(param.adapterName);
-                }
-
-                if(dev == null && adapterPicked)
-                {
-                    dev = curDev;
-                }
-                else if (adapterPicked)
-                {
-                    dev = null;
-                    break;
-                }
-            }
-
-            if(dev == null)
-            {
-                Console.WriteLine("Couldn't find one adapter to send packet on, sending it to all adapters.");
-            }
-
-
-            param.UpdateDevInfo(dev);
-
-            //actually create the packet
-            Packet packet = PacketFactory.CreatePacket(param);
-
             try
             {
+                //parse args, and put them into the Param object
+                Param param = new Param(args);
+
+                //pick the right adapter depending on the arg, null is returned if it couldn't decide
+                ICaptureDevice dev = Utility.PickDevice(param);
+
+                //update the source mac and ip addresses depending on the device that was picked
+                //default values are placed if device was null
+                param.UpdateDevInfo(dev);
+
+                //actually create the packet
+                Packet packet = PacketFactory.CreatePacket(param);
+
                 Console.WriteLine("Sending the following packet:");
                 Console.WriteLine(packet.ToString());
                 byte[] packetBytes = packet.Bytes;
 
+                //if no specific adapter was picked, send to every adapters, else just send it to that adapter
                 if(dev == null)
                 {
                     foreach (ICaptureDevice tempDev in CaptureDeviceList.Instance)
