@@ -91,7 +91,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"C:\Program Files\7-Zip\7z.exe" a -tzip "$(SolutionDir)\SharpSender.zip" "$(TargetDir)*.dll" "$(TargetDir)SharpSender.exe" "$(SolutionDir)\README.md"</PostBuildEvent>
+    <PostBuildEvent>"C:\Program Files\7-Zip\7z.exe" a -tzip "$(SolutionDir)SharpSender.zip" "$(TargetDir)*.dll" "$(TargetDir)SharpSender.exe" "$(SolutionDir)\README.md"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
