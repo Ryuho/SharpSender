@@ -118,7 +118,8 @@ class Utility
     public static void PrintHelp()
     {
         Console.WriteLine("usage: SharpSender.exe -icmp -dIP 127.0.0.1 -type 0 -code 0");
-        Console.WriteLine("       SharpSender.exe -adapter 1 -dip fe80::1 -v6EH 0,43,17");
+        Console.WriteLine("       SharpSender.exe -adapter 1 -dip fe80::1 -v6EH 60,44,6 -sport 9090 -dport 80");
+        Console.WriteLine("       SharpSender.exe -adapter 1 -dip fe80::1 -v6EH 44,135,59");
         Console.WriteLine(@"       SharpSender.exe -adapter ""Ether"" -dMAC ee:ff:22:11:11:33 -ethertype 0xCAFE");
         Console.WriteLine("");
         Console.WriteLine("possible address args: ");
@@ -682,7 +683,7 @@ class PacketFactory
     {
         IPv6Packet ipPacket = new IPv6Packet(param.sIP, param.dIP);
         ipPacket.Protocol = (IPProtocolType)param.ExtentionHeader[0];
-        param.ExtentionHeader.Remove(0);
+        param.ExtentionHeader.RemoveAt(0);
 
         //need to find out what is the last packet so that we can decide on the length of the packet
         IPProtocolType endEH = param.ExtentionHeader[param.ExtentionHeader.Count - 1];
@@ -703,16 +704,43 @@ class PacketFactory
                 break;
         }
 
-        int EHSize = param.ExtentionHeader.Count * 24;
+        //calculate the Extension header size
+        int EHSize = 0;
+        foreach(IPProtocolType eh in param.ExtentionHeader)
+        {
+            if(eh == IPProtocolType.FRAGMENT)
+            {
+                EHSize += 8;
+            }
+            else
+            {
+                EHSize += 24;
+            }
+        }
+
+        if (ipPacket.Protocol == IPProtocolType.FRAGMENT)
+        {
+            EHSize -= 16;
+        }
+
         byte[] tempPayload = new byte[EHSize + param.payload.Length + lastHeaderLength];
         param.payload.CopyTo(tempPayload, EHSize + lastHeaderLength);
 
         int loc = 0;
+        byte previous = (byte)ipPacket.Protocol;
         foreach (byte eh in param.ExtentionHeader)
         {
             tempPayload.SetValue((byte)eh, loc);
             tempPayload.SetValue((byte)2, loc + 1);
-            loc += 24;
+            if ((IPProtocolType)previous == IPProtocolType.FRAGMENT)
+            {
+                loc += 8;
+            }
+            else
+            {
+                loc += 24;
+            }
+            previous = eh;
         }
 
         //set the port if the last EH is tcp or udp

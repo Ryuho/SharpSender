@@ -13,7 +13,8 @@ Download the binary from this link: https://raw.github.com/Ryuho/SharpSender/mas
 
         SharpSender.exe -h
         usage: SharpSender.exe -icmp -dIP 127.0.0.1 -type 0 -code 0
-               SharpSender.exe -adapter 1 -dip fe80::1 -v6EH 0,43,17
+               SharpSender.exe -adapter 1 -dip fe80::1 -v6EH 60,44,6 -sport 9090 -dport 80
+               SharpSender.exe -adapter 1 -dip fe80::1 -v6EH 44,135,59
                SharpSender.exe -adapter "Ether" -dMAC ee:ff:22:11:11:33 -ethertype 0xCAFE
 
         possible address args:
