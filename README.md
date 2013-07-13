@@ -9,7 +9,7 @@ This tool requires the following:
 
 This tool is tested to work with Windows XP up to Windows 8.
  
-Download the binary by downloading this zip: https://raw.github.com/Ryuho/SharpSender/master/SharpSender.zip
+Download the binary by downloading this zip: https://raw.github.com/Ryuho/SharpSender/master/SharpSender.exe
 
         SharpSender.exe -h
         usage: SharpSender.exe -icmp -dIP 127.0.0.1 -type 0 -code 0
@@ -33,3 +33,9 @@ Download the binary by downloading this zip: https://raw.github.com/Ryuho/SharpS
         2:   Local Area Connection 3
         3:   Bluetooth Network Connection
         4:   Local Area Connection
+
+===========
+To build this from source, you need the following installed:
+ - VS2010 or VS2012
+ - 7zip
+ - ILMerge
