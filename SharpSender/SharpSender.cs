@@ -174,12 +174,12 @@ class Utility
                 if (param.adapter == null)
                 {
                     //these are the default adapter names that are commonly used
-                    adapterPicked = Utility.GetFriendlyName(curDev).Contains("Local Area Connection");
-                    adapterPicked |= Utility.GetFriendlyName(curDev).Contains("Ethernet");
+                    adapterPicked = Utility.GetFriendlyName(curDev).ToLower().Contains("Local Area Connection".ToLower());
+                    adapterPicked |= Utility.GetFriendlyName(curDev).ToLower().Contains("Ethernet".ToLower());
                 }
                 else
                 {
-                    adapterPicked = Utility.GetFriendlyName(curDev).Contains(param.adapter);
+                    adapterPicked = Utility.GetFriendlyName(curDev).ToLower().Contains((param.adapter).ToLower());
                 }
 
                 if (dev == null && adapterPicked)
@@ -338,13 +338,15 @@ class Param
                     if (nextStr.StartsWith("0x"))
                     {
                         payload = Utility.ParseHex(nextStr);
+                        Console.WriteLine("Read in -payload as: 0x" + BitConverter.ToString(payload));
                     }
                     else
                     {
                         payload = Encoding.ASCII.GetBytes(nextStr);
+                        Console.WriteLine("Read in -payload as: " + System.Text.Encoding.Default.GetString(payload));
                     }
 
-                    Console.WriteLine("Read in -payload as: " + payload.ToString());
+                    
                 }
                 else if (String.Compare(curStr, "-adapter", true) == 0)
                 {
@@ -427,6 +429,12 @@ class Param
         if (ExtentionHeader.Count != 0 && (dIP == null || !dIP.ToString().Contains(":")))
         {
             Console.WriteLine("dIP needs to be IPv6 for ExtensionHeader packets.");
+            Environment.Exit(1);
+        }
+
+        if (ExtentionHeader.Count == 1 )
+        {
+            Console.WriteLine("There needs to be at least 2 extension headers.");
             Environment.Exit(1);
         }
 
@@ -674,6 +682,7 @@ class PacketFactory
     {
         IPv6Packet ipPacket = new IPv6Packet(param.sIP, param.dIP);
         ipPacket.Protocol = (IPProtocolType)param.ExtentionHeader[0];
+        param.ExtentionHeader.Remove(0);
 
         //need to find out what is the last packet so that we can decide on the length of the packet
         IPProtocolType endEH = param.ExtentionHeader[param.ExtentionHeader.Count - 1];
