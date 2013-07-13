@@ -217,7 +217,7 @@ class Param
     public PacketType packetType = PacketType.ICMP;
     public IPProtocolType IPProtocol = IPProtocolType.IP;
     public EthernetPacketType EtherTypeProtocol = (EthernetPacketType)0x0800;
-    public byte[] payload = new byte[64];
+    public byte[] payload = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
     public string adapter = null;
     public List<IPProtocolType> ExtentionHeader = new List<IPProtocolType>();
 
@@ -650,38 +650,7 @@ class PacketFactory
                 }
                 else
                 {
-                    IPv6Packet ipPacket = new IPv6Packet(param.sIP, param.dIP);
-                    ipPacket.Protocol = (IPProtocolType)param.ExtentionHeader[0];
-
-                    int EHSize = param.ExtentionHeader.Count * 24;
-                    byte[] tempPayload = new byte[EHSize + param.payload.Length];
-                    param.payload.CopyTo(tempPayload, EHSize);
-
-                    int loc = 0;
-                    foreach (byte eh in param.ExtentionHeader)
-                    {
-                        tempPayload.SetValue((byte)eh, loc);
-                        tempPayload.SetValue((byte)2, loc+1);
-                        loc += 24;
-                    }
-
-                    //kind of a hack to make it so that UDP length is valid, TCP luckly did not need any tinkering
-                    IPProtocolType endEH = param.ExtentionHeader[param.ExtentionHeader.Count - 1];
-                    if (endEH == IPProtocolType.TCP)
-                    {
-
-                    }
-                    else if (endEH == IPProtocolType.UDP)
-                    {
-                        tempPayload.SetValue((byte)0x08, loc + 5);
-                        tempPayload.SetValue((byte)0x12, loc + 6);
-                        tempPayload.SetValue((byte)0x34, loc + 7);
-                    }
-
-                    ipPacket.PayloadData = tempPayload;
-                    ipPacket.PayloadLength = (ushort)tempPayload.Length;
-                    ipPacket.UpdateCalculatedValues();
-                    ret.PayloadPacket = ipPacket;
+                    ret = PacketFactory.CreateEHPacket(param, (EthernetPacket)ret);
                 }
                 ret.UpdateCalculatedValues();
             }
@@ -697,6 +666,72 @@ class PacketFactory
             ret.UpdateCalculatedValues();
         }
 
+        return ret;
+    }
+
+    //terrible hack to get extension headers working
+    private static EthernetPacket CreateEHPacket(Param param, EthernetPacket ret)
+    {
+        IPv6Packet ipPacket = new IPv6Packet(param.sIP, param.dIP);
+        ipPacket.Protocol = (IPProtocolType)param.ExtentionHeader[0];
+
+        //need to find out what is the last packet so that we can decide on the length of the packet
+        IPProtocolType endEH = param.ExtentionHeader[param.ExtentionHeader.Count - 1];
+        int lastHeaderLength = 0;
+        switch (endEH)
+        {
+            case IPProtocolType.TCP:
+                lastHeaderLength = 20;
+                break;
+            case IPProtocolType.UDP:
+                lastHeaderLength = 8;
+                break;
+            case IPProtocolType.ICMP:
+                lastHeaderLength = 8;
+                break;
+            default:
+                lastHeaderLength = 64;
+                break;
+        }
+
+        int EHSize = param.ExtentionHeader.Count * 24;
+        byte[] tempPayload = new byte[EHSize + param.payload.Length + lastHeaderLength];
+        param.payload.CopyTo(tempPayload, EHSize + lastHeaderLength);
+
+        int loc = 0;
+        foreach (byte eh in param.ExtentionHeader)
+        {
+            tempPayload.SetValue((byte)eh, loc);
+            tempPayload.SetValue((byte)2, loc + 1);
+            loc += 24;
+        }
+
+        //set the port if the last EH is tcp or udp
+        if (endEH == IPProtocolType.TCP || endEH == IPProtocolType.UDP)
+        {
+            //set the port numbers
+            tempPayload.SetValue((byte)(param.sPort >> 8), loc);
+            tempPayload.SetValue((byte)param.sPort, loc + 1);
+            tempPayload.SetValue((byte)(param.dPort >> 8), loc + 2);
+            tempPayload.SetValue((byte)param.dPort, loc + 3);
+        }
+        if (endEH == IPProtocolType.TCP)
+        {
+            tempPayload.SetValue((byte)0x50, loc + 12);
+        }
+        else if (endEH == IPProtocolType.UDP)
+        {
+            //set the length of the payload
+            Int16 length = (Int16)(lastHeaderLength + param.payload.Length);
+            BitConverter.GetBytes(length).CopyTo(tempPayload, loc + 5);
+            tempPayload.SetValue((byte)0x12, loc + 6);
+            tempPayload.SetValue((byte)0x34, loc + 7);
+        }
+
+        ipPacket.PayloadData = tempPayload;
+        ipPacket.PayloadLength = (ushort)tempPayload.Length;
+        ipPacket.UpdateCalculatedValues();
+        ret.PayloadPacket = ipPacket;
         return ret;
     }
 }
@@ -751,6 +786,7 @@ namespace SharpSender
             catch (Exception e)
             {
                 Console.WriteLine("-- " + e.Message);
+                Console.WriteLine("-- " + e.StackTrace);
             }
         }
     }
