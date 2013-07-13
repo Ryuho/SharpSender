@@ -9,7 +9,7 @@ This tool requires the following:
 
 This tool is tested to work with Windows XP up to Windows 8.
  
-Download the binary by downloading this zip: https://raw.github.com/Ryuho/SharpSender/master/SharpSender.exe
+Download the binary from this link: https://raw.github.com/Ryuho/SharpSender/master/SharpSender.exe
 
         SharpSender.exe -h
         usage: SharpSender.exe -icmp -dIP 127.0.0.1 -type 0 -code 0
