@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 using PacketDotNet;
@@ -155,7 +154,7 @@ class Param
     //constructor
     public Param(string[] args)
     {
-        for (int i = 0; i < args.Count();i++)
+        for (int i = 0; i < args.Length;i++)
         {
             string curStr = args[i];
 
@@ -331,7 +330,7 @@ class Param
             Environment.Exit(1);
         }
 
-        if (packetType == PacketType.ICMPv6 && dIP.ToString().Contains('.'))
+        if (packetType == PacketType.ICMPv6 && dIP.ToString().Contains("."))
         {
             Console.WriteLine("dIP needs to be IPv6 for ICMPv6 packets.");
             Environment.Exit(1);
@@ -380,12 +379,12 @@ class Param
             {
                 if (sIP == null && dIP != null)
                 {
-                    if (dIP.ToString().Contains('.') && add.ToString().Contains('.'))
+                    if (dIP.ToString().Contains(".") && add.ToString().Contains("."))
                     {
                         sIP = add;
                         Console.WriteLine("Set sIP to: " + add.ToString());
                     }
-                    else if (dIP.ToString().Contains(':') && add.ToString().Contains(':'))
+                    else if (dIP.ToString().Contains(":") && add.ToString().Contains(":"))
                     {
                         sIP = add;
                         Console.WriteLine("Set sIP to: " + add.ToString());
@@ -430,7 +429,7 @@ class PacketFactory
         if(param.packetType == Param.PacketType.TCP)
         {
             TcpPacket tcpPacket = new TcpPacket(param.sPort, param.dPort);
-            if (param.dIP.ToString().Contains('.'))
+            if (param.dIP.ToString().Contains("."))
             {
                 IPv4Packet ipPacket = new IPv4Packet(param.sIP, param.dIP);
                 ret = new EthernetPacket(param.sMAC, param.dMAC, EthernetPacketType.IpV4);
@@ -454,14 +453,14 @@ class PacketFactory
         else if (param.packetType == Param.PacketType.UDP)
         {
             UdpPacket udpPacket = new UdpPacket(param.sPort, param.dPort);
-            if (param.dIP.ToString().Contains('.'))
+            if (param.dIP.ToString().Contains("."))
             {
                 IPv4Packet ipPacket = new IPv4Packet(param.sIP, param.dIP);
                 ret = new EthernetPacket(param.sMAC, param.dMAC, EthernetPacketType.IpV4);
                 ipPacket.PayloadPacket = udpPacket;
                 udpPacket.PayloadData = param.payload;
                 udpPacket.UpdateUDPChecksum();
-                ipPacket.PayloadLength = (ushort)(ipPacket.PayloadLength + param.payload.Count());
+                ipPacket.PayloadLength = (ushort)(ipPacket.PayloadLength + param.payload.Length);
                 ipPacket.UpdateIPChecksum();
                 ret.PayloadPacket = ipPacket;
             }
@@ -472,7 +471,7 @@ class PacketFactory
                 ipPacket.PayloadPacket = udpPacket;
                 udpPacket.PayloadData = param.payload;
                 udpPacket.UpdateUDPChecksum();
-                ipPacket.PayloadLength = (ushort)(ipPacket.PayloadLength + param.payload.Count());
+                ipPacket.PayloadLength = (ushort)(ipPacket.PayloadLength + param.payload.Length);
                 ret.PayloadPacket = ipPacket;
             }
         }
@@ -525,7 +524,7 @@ class PacketFactory
         }
         else if (param.packetType == Param.PacketType.IP)
         {
-            if (param.dIP.ToString().Contains('.'))
+            if (param.dIP.ToString().Contains("."))
             {
                 ret = new EthernetPacket(param.sMAC, param.dMAC, EthernetPacketType.IpV4);
                 IPv4Packet ipPacket = new IPv4Packet(param.sIP, param.dIP);
@@ -549,9 +548,9 @@ class PacketFactory
         {
             ret = new EthernetPacket(param.sMAC, param.dMAC, param.EtherTypeProtocol);
             byte[] etherBuffer = (new byte[64]);
-            var payload = new byte[etherBuffer.Count() + (param.payload).Count()];
+            var payload = new byte[etherBuffer.Length + (param.payload).Length];
             etherBuffer.CopyTo(payload, 0);
-            (param.payload).CopyTo(payload, etherBuffer.Count());
+            (param.payload).CopyTo(payload, etherBuffer.Length);
             ret.PayloadData = payload;
             ret.UpdateCalculatedValues();
         }
