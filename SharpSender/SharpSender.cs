@@ -380,7 +380,7 @@ class Param
                 {
                     Console.WriteLine("Unrecognized param: " + curStr);
                     Utility.PrintHelp();
-                    Environment.Exit(0);
+                    Environment.Exit(1);
                 }
             }
             catch (IndexOutOfRangeException)
@@ -393,11 +393,18 @@ class Param
                 Console.WriteLine("The address specified for " + curStr + " was not in the correct format.");
                 Environment.Exit(1);
             }
+            catch (DllNotFoundException e)
+            {
+                Console.WriteLine("A required DLL was not found, is WinPcap and .NET framework installed?");
+                Console.WriteLine("Exception Message: " + e.Message);
+                Console.WriteLine("StackTrace: " + e.StackTrace);
+                Environment.Exit(1);
+            }
             catch (Exception e)
             {
                 Console.WriteLine("Exception caught while handling commandline.");
-                Console.WriteLine("Last arg handled:" + curStr);
-                Console.WriteLine("Actual exception: " + e.ToString());
+                Console.WriteLine("Exception Message: " + e.Message);
+                Console.WriteLine("StackTrace: " + e.StackTrace);
                 Environment.Exit(1);
             }
         }
@@ -822,8 +829,9 @@ namespace SharpSender
             }
             catch (Exception e)
             {
-                Console.WriteLine("-- " + e.Message);
-                Console.WriteLine("-- " + e.StackTrace);
+                Console.WriteLine("Caught an exception");
+                Console.WriteLine("Message   : " + e.Message);
+                Console.WriteLine("StackTrace: " + e.StackTrace);
             }
         }
     }
