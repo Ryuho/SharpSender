@@ -82,7 +82,7 @@ class Utility
         foreach (string line in lines)
         {
             //Console.WriteLine(line);
-            if(line.Contains("FriendlyName:"))
+            if (line.Contains("FriendlyName:"))
             {
                 ret = line.Substring(13);
             }
@@ -100,7 +100,7 @@ class Utility
         List<IPAddress> ret = new List<IPAddress>();
         foreach (SharpPcap.LibPcap.LibPcapLiveDevice dev in SharpPcap.LibPcap.LibPcapLiveDeviceList.Instance)
         {
-            if(dev.Name.Contains(capDevGUID))
+            if (dev.Name.Contains(capDevGUID))
             {
                 for (int i = 0; i < dev.Addresses.Count; i++)
                 {
@@ -218,14 +218,14 @@ class Param
     public PacketType packetType = PacketType.ICMP;
     public IPProtocolType IPProtocol = IPProtocolType.IP;
     public EthernetPacketType EtherTypeProtocol = (EthernetPacketType)0x0800;
-    public byte[] payload = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    public byte[] payload = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
     public string adapter = null;
     public List<IPProtocolType> ExtentionHeader = new List<IPProtocolType>();
 
     //constructor, reads in the args
     public Param(string[] args)
     {
-        for (int i = 0; i < args.Length;i++)
+        for (int i = 0; i < args.Length; i++)
         {
             string curStr = args[i];
 
@@ -242,7 +242,7 @@ class Param
                     string nextStr = args[++i];
                     string[] tempEHArray = nextStr.Split(',');
                     //ExtentionHeader = 
-                        
+
                     int[] tempInt = Array.ConvertAll(tempEHArray, int.Parse);
                     foreach (int curInt in tempInt)
                     {
@@ -250,7 +250,7 @@ class Param
                     }
                     packetType = PacketType.IP;
                     IPProtocol = IPProtocolType.IPV6;
-                    
+
                     Console.WriteLine("Read in -v6EH as: " + string.Join(",", tempEHArray));
                     Console.WriteLine("Setting packetType as: " + packetType.ToString());
                     Console.WriteLine("Setting IPProtocol as: " + IPProtocol.ToString());
@@ -285,7 +285,7 @@ class Param
                 {
                     string nextStr = args[++i];
                     packetType = PacketType.IP;
-                    if(nextStr.StartsWith("0x"))
+                    if (nextStr.StartsWith("0x"))
                     {
                         IPProtocol = (IPProtocolType)Convert.ToInt32(nextStr, 16);
                     }
@@ -347,7 +347,7 @@ class Param
                         Console.WriteLine("Read in -payload as: " + System.Text.Encoding.Default.GetString(payload));
                     }
 
-                    
+
                 }
                 else if (String.Compare(curStr, "-adapter", true) == 0)
                 {
@@ -433,6 +433,11 @@ class Param
             Console.WriteLine("dIP needs to be IPv6 for ICMPv6 packets.");
             Environment.Exit(1);
         }
+        else if ((packetType == PacketType.ICMP && (dIP == null || !dIP.ToString().Contains("."))))
+        {
+            Console.WriteLine("dIP needs to be IPv4 for ICMP packets.");
+            Environment.Exit(1);
+        }
 
         if (ExtentionHeader.Count != 0 && (dIP == null || !dIP.ToString().Contains(":")))
         {
@@ -440,7 +445,7 @@ class Param
             Environment.Exit(1);
         }
 
-        if (ExtentionHeader.Count == 1 )
+        if (ExtentionHeader.Count == 1)
         {
             Console.WriteLine("There needs to be at least 2 extension headers.");
             Environment.Exit(1);
@@ -452,7 +457,7 @@ class Param
             Environment.Exit(1);
         }
     }
-    
+
     public void UpdateDevInfo(ICaptureDevice dev)
     {
         // if we are sending packet to all adapters
@@ -502,7 +507,7 @@ class Param
                 }
             }
 
-            if(sIP == null)
+            if (sIP == null)
             {
                 Console.WriteLine("The chosen adapter did not have a valid address");
                 Environment.Exit(1);
@@ -542,7 +547,7 @@ class PacketFactory
         Packet ret = null;
 
         //create layer 4
-        if(param.packetType == Param.PacketType.TCP)
+        if (param.packetType == Param.PacketType.TCP)
         {
             TcpPacket tcpPacket = new TcpPacket(param.sPort, param.dPort);
             if (param.dIP.ToString().Contains("."))
@@ -591,7 +596,7 @@ class PacketFactory
                 ret.PayloadPacket = ipPacket;
             }
         }
-        else if(param.packetType == Param.PacketType.ICMP)
+        else if (param.packetType == Param.PacketType.ICMP)
         {
             ICMPv4Packet icmpPacket = new ICMPv4Packet(new ByteArraySegment(new byte[32]));
             if (param.type != 0 && param.code != 0)
@@ -671,7 +676,7 @@ class PacketFactory
                 ret.UpdateCalculatedValues();
             }
         }
-        else if(param.packetType == Param.PacketType.EtherType)
+        else if (param.packetType == Param.PacketType.EtherType)
         {
             ret = new EthernetPacket(param.sMAC, param.dMAC, param.EtherTypeProtocol);
             byte[] etherBuffer = (new byte[64]);
@@ -713,9 +718,9 @@ class PacketFactory
 
         //calculate the Extension header size
         int EHSize = 0;
-        foreach(IPProtocolType eh in param.ExtentionHeader)
+        foreach (IPProtocolType eh in param.ExtentionHeader)
         {
-            if(eh == IPProtocolType.FRAGMENT)
+            if (eh == IPProtocolType.FRAGMENT)
             {
                 EHSize += 8;
             }
@@ -806,7 +811,7 @@ namespace SharpSender
                 byte[] packetBytes = packet.Bytes;
 
                 //if no specific adapter was picked, send to every adapters, else just send it to that adapter
-                if(dev == null)
+                if (dev == null)
                 {
                     foreach (ICaptureDevice tempDev in CaptureDeviceList.Instance)
                     {
