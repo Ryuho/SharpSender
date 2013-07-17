@@ -620,55 +620,7 @@ class PacketFactory
         }
         else if (param.packetType == Param.PacketType.ICMPv6)
         {
-            byte[] header = null;
-
-            if (((ICMPv6Types)param.type) == ICMPv6Types.RouterSolicitation)
-            {
-                //create a fake ICMPv6 Router Solicitation headers
-                header = new byte[8];
-            }
-            else if (((ICMPv6Types)param.type) == ICMPv6Types.RouterAdvertisement)
-            {
-                //create a fake ICMPv6 Router Advertisement headers
-                header = new byte[32];
-                header[16] = 0x01;
-                header[17] = 0x01;
-                header[24] = 0x05;
-                header[25] = 0x01;
-            }
-            else if (((ICMPv6Types)param.type) == ICMPv6Types.NeighborSolicitation)
-            {
-                //create a fake ICMPv6 Neighbor Solicitation header
-                header = new byte[24];
-            }
-            else if (((ICMPv6Types)param.type) == ICMPv6Types.NeighborAdvertisement)
-            {
-                //create a fake ICMPv6 Neighbor Advertisement header
-                header = new byte[24];
-            }
-            else
-            {
-                header = new byte[64];
-            }
-
-            ICMPv6Packet icmpv6Packet = new ICMPv6Packet(new ByteArraySegment(header));
-            if (param.type != 0)
-            {
-                icmpv6Packet.Type = (ICMPv6Types)(param.type);
-            }
-            else
-            {
-                icmpv6Packet.Type = ICMPv6Types.EchoRequest;
-            }
-
-            if (param.code != 0)
-            {
-                icmpv6Packet.Code = (byte)param.code;
-            }
-            else
-            {
-                icmpv6Packet.Code = (byte)0;
-            }
+            ICMPv6Packet icmpv6Packet = CreateICMPv6Packet(param);
             IPv6Packet ipPacket = new IPv6Packet(param.sIP, param.dIP);
             ipPacket.PayloadPacket = icmpv6Packet;
             ret = new EthernetPacket(param.sMAC, param.dMAC, EthernetPacketType.IpV6);
@@ -719,6 +671,79 @@ class PacketFactory
         }
 
         return ret;
+    }
+
+    //terrible hack to get ICMPv6 packets to work
+    private static ICMPv6Packet CreateICMPv6Packet(Param param)
+    {
+        byte[] header = null;
+
+        switch ((ICMPv6Types)param.type)
+        {
+            case ICMPv6Types.RouterSolicitation:
+                header = new byte[8];
+                break;
+            case ICMPv6Types.RouterAdvertisement:
+                header = new byte[32];
+                header[16] = 0x01;
+                header[17] = 0x01;
+                header[24] = 0x05;
+                header[25] = 0x01;
+                break;
+            case ICMPv6Types.NeighborSolicitation:
+                header = new byte[24];
+                break;
+            case ICMPv6Types.NeighborAdvertisement:
+                header = new byte[24];
+                break;
+            case ICMPv6Types.RedirectMessage:
+                header = new byte[40];
+                break;
+            case ICMPv6Types.RouterRenumbering:
+                header = new byte[40];
+                break;
+            case ICMPv6Types.ICMPNodeInformationQuery:
+                header = new byte[32];
+                break;
+            case ICMPv6Types.ICMPNodeInformationResponse:
+                header = new byte[16];
+                break;
+            case ICMPv6Types.InverseNeighborDiscoverySolicitationMessage:
+                header = new byte[8];
+                break;
+            case ICMPv6Types.InverseNeighborDiscoveryAdvertisementMessage:
+                header = new byte[8];
+                break;
+            case ICMPv6Types.MulticastListenerDiscovery:
+                header = new byte[28];
+                header[7] = 0x01;
+                break;
+            default:
+                header = new byte[64];
+                break;
+        }
+
+
+        ICMPv6Packet icmpv6Packet = new ICMPv6Packet(new ByteArraySegment(header));
+        if (param.type != 0)
+        {
+            icmpv6Packet.Type = (ICMPv6Types)(param.type);
+        }
+        else
+        {
+            icmpv6Packet.Type = ICMPv6Types.EchoRequest;
+        }
+
+        if (param.code != 0)
+        {
+            icmpv6Packet.Code = (byte)param.code;
+        }
+        else
+        {
+            icmpv6Packet.Code = (byte)0;
+        }
+
+        return icmpv6Packet;
     }
 
     //terrible hack to get extension headers working
