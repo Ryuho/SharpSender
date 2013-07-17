@@ -620,7 +620,34 @@ class PacketFactory
         }
         else if (param.packetType == Param.PacketType.ICMPv6)
         {
-            ICMPv6Packet icmpv6Packet = new ICMPv6Packet(new ByteArraySegment(new byte[32]));
+            byte[] header = null;
+
+            if (((ICMPv6Types)param.type) == ICMPv6Types.RouterSolicitation)
+            {
+                //create a fake ICMPv6 Router Solicitation headers
+                header = new byte[8];
+            }
+            else if (((ICMPv6Types)param.type) == ICMPv6Types.RouterAdvertisement)
+            {
+                //create a fake ICMPv6 Router Advertisement headers
+                header = new byte[32];
+                header[16] = 0x01;
+                header[17] = 0x01;
+                header[24] = 0x05;
+                header[25] = 0x01;
+            }
+            else if (((ICMPv6Types)param.type) == ICMPv6Types.NeighborSolicitation)
+            {
+                //create a fake ICMPv6 Neighbor Solicitation header
+                header = new byte[24];
+            }
+            else if (((ICMPv6Types)param.type) == ICMPv6Types.NeighborAdvertisement)
+            {
+                //create a fake ICMPv6 Neighbor Advertisement header
+                header = new byte[24];
+            }
+
+            ICMPv6Packet icmpv6Packet = new ICMPv6Packet(new ByteArraySegment(header));
             if (param.type != 0)
             {
                 icmpv6Packet.Type = (ICMPv6Types)(param.type);
