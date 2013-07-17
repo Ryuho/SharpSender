@@ -691,14 +691,10 @@ class PacketFactory
                 header[25] = 0x01;
                 break;
             case ICMPv6Types.NeighborSolicitation:
-                header = new byte[24];
-                break;
             case ICMPv6Types.NeighborAdvertisement:
                 header = new byte[24];
                 break;
             case ICMPv6Types.RedirectMessage:
-                header = new byte[40];
-                break;
             case ICMPv6Types.RouterRenumbering:
                 header = new byte[40];
                 break;
@@ -709,14 +705,38 @@ class PacketFactory
                 header = new byte[16];
                 break;
             case ICMPv6Types.InverseNeighborDiscoverySolicitationMessage:
-                header = new byte[8];
-                break;
             case ICMPv6Types.InverseNeighborDiscoveryAdvertisementMessage:
                 header = new byte[8];
                 break;
             case ICMPv6Types.MulticastListenerDiscovery:
                 header = new byte[28];
                 header[7] = 0x01;
+                break;
+            case ICMPv6Types.HomeAgentAddressDiscoveryRequestMessage:
+            case ICMPv6Types.HomeAgentAddressDiscoveryReplyMessage:
+                header = new byte[8];
+                break;
+            case ICMPv6Types.MobilePrefixSolicitation:
+            case ICMPv6Types.MobilePrefixAdvertisement:
+                header = new byte[8];
+                break;
+            case ICMPv6Types.CertificationPathSolicitation:
+                header = new byte[8];
+                break;
+            case ICMPv6Types.CertificationPathAdvertisement:
+                header = new byte[12];
+                break;
+            case ICMPv6Types.MulticastRouterAdvertisement:
+                header = new byte[8];
+                break;
+            case ICMPv6Types.MulticastRouterSolicitation:
+                header = new byte[8];
+                break;
+            case ICMPv6Types.MulticastRouterTermination:
+                header = new byte[4];
+                break;
+            case ICMPv6Types.RPLControlMessage:
+                header = new byte[6];
                 break;
             default:
                 header = new byte[64];
