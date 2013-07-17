@@ -646,6 +646,10 @@ class PacketFactory
                 //create a fake ICMPv6 Neighbor Advertisement header
                 header = new byte[24];
             }
+            else
+            {
+                header = new byte[64];
+            }
 
             ICMPv6Packet icmpv6Packet = new ICMPv6Packet(new ByteArraySegment(header));
             if (param.type != 0)
