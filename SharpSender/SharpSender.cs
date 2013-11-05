@@ -869,6 +869,12 @@ class PacketFactory
             tempPayload.SetValue((byte)0x34, loc + 7);
         }
 
+        //set the tcp flags if they are TCP
+        if (endEH == IPProtocolType.TCP)
+        {
+            tempPayload.SetValue((byte)param.tcpFlag, loc + 13);
+        }
+
         ipPacket.PayloadData = tempPayload;
         ipPacket.PayloadLength = (ushort)tempPayload.Length;
         ipPacket.UpdateCalculatedValues();
