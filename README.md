@@ -21,19 +21,17 @@ Download the binary from this link: https://raw.github.com/Ryuho/SharpSender/mas
          -dIP <address>, -sIP <address>, -dMAC <address>, -sMAC <address>
 
         possible protocol args:
-          -tcp, -udp, -icmp, -icmpv6, -ip <int>, -ethertype <int>
-          -sPort <int>, -dPort <int>, -code <int>, -type <int>
+          -tcp, -udp, -icmp, -icmpv6, -IPv4Frag, -ip <int>, -ethertype <int>
+          -sPort <int>, -dPort <int>, -tcpFlag <int>, -code <int>, -type <int>
           -v6EH <int,int,int...>
 
         possible other args:
           -h, -adapter <string|int>, -payload <string|hex>
 
         Printing list of available adapters:
-        0:   Local Area Connection 2
-        1:   Wireless Network Connection
-        2:   Local Area Connection 3
-        3:   Bluetooth Network Connection
-        4:   Local Area Connection
+        0:   VMware Network Adapter VMnet1
+        1:   VMware Network Adapter VMnet8
+        2:   Local Area Connection
 
 ===========
 To build this from source, you need the following installed:

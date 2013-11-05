@@ -126,8 +126,8 @@ class Utility
         Console.WriteLine(" -dIP <address>, -sIP <address>, -dMAC <address>, -sMAC <address>");
         Console.WriteLine("");
         Console.WriteLine("possible protocol args: ");
-        Console.WriteLine("  -tcp, -udp, -icmp, -icmpv6, -ip <int>, -ethertype <int>");
-        Console.WriteLine("  -sPort <int>, -dPort <int>, -code <int>, -type <int>");
+        Console.WriteLine("  -tcp, -udp, -icmp, -icmpv6, -IPv4Frag, -ip <int>, -ethertype <int>");
+        Console.WriteLine("  -sPort <int>, -dPort <int>, -tcpFlag <int>, -code <int>, -type <int>");
         Console.WriteLine("  -v6EH <int,int,int...>");
         Console.WriteLine("");
         Console.WriteLine("possible other args: ");
@@ -213,8 +213,10 @@ class Param
     public PhysicalAddress sMAC = null;// = PhysicalAddress.Parse("FF:FF:FF:FF:FF:FF");
     public ushort dPort = 0;
     public ushort sPort = 0;
+    public byte tcpFlag = 2;
     public ushort code = 0;
     public ushort type = 0;
+    public bool IPv4Frag = false;
     public PacketType packetType = PacketType.ICMP;
     public IPProtocolType IPProtocol = IPProtocolType.IP;
     public EthernetPacketType EtherTypeProtocol = (EthernetPacketType)0x0800;
@@ -327,6 +329,12 @@ class Param
                     type = (ushort)Int16.Parse(nextStr);
                     Console.WriteLine("Read in type as: " + type.ToString());
                 }
+                else if (String.Compare(curStr, "-tcpFlag", true) == 0)
+                {
+                    string nextStr = args[++i];
+                    tcpFlag = (byte)Byte.Parse(nextStr);
+                    Console.WriteLine("Read in tcpFlag as: " + tcpFlag.ToString());
+                }
                 else if (String.Compare(curStr, "-code", true) == 0)
                 {
                     string nextStr = args[++i];
@@ -346,14 +354,17 @@ class Param
                         payload = Encoding.ASCII.GetBytes(nextStr);
                         Console.WriteLine("Read in -payload as: " + System.Text.Encoding.Default.GetString(payload));
                     }
-
-
                 }
                 else if (String.Compare(curStr, "-adapter", true) == 0)
                 {
                     string nextStr = args[++i];
                     adapter = nextStr;
                     Console.WriteLine("Read in -adapter as: " + adapter);
+                }
+                else if (String.Compare(curStr, "-IPv4Frag", true) == 0)
+                {
+                    IPv4Frag = true;
+                    Console.WriteLine("Read in -ipv4frag as: " + IPv4Frag);
                 }
                 else if (String.Compare(curStr, "-ICMP", true) == 0)
                 {
@@ -550,9 +561,11 @@ class PacketFactory
         if (param.packetType == Param.PacketType.TCP)
         {
             TcpPacket tcpPacket = new TcpPacket(param.sPort, param.dPort);
+            tcpPacket.AllFlags = param.tcpFlag;
             if (param.dIP.ToString().Contains("."))
             {
                 IPv4Packet ipPacket = new IPv4Packet(param.sIP, param.dIP);
+                if (param.IPv4Frag) { ipPacket.FragmentFlags = (int)1; }
                 ret = new EthernetPacket(param.sMAC, param.dMAC, EthernetPacketType.IpV4);
                 ipPacket.PayloadPacket = tcpPacket;
                 tcpPacket.PayloadData = param.payload;
@@ -577,6 +590,7 @@ class PacketFactory
             if (param.dIP.ToString().Contains("."))
             {
                 IPv4Packet ipPacket = new IPv4Packet(param.sIP, param.dIP);
+                if (param.IPv4Frag) { ipPacket.FragmentFlags = (int)1; }
                 ret = new EthernetPacket(param.sMAC, param.dMAC, EthernetPacketType.IpV4);
                 ipPacket.PayloadPacket = udpPacket;
                 udpPacket.PayloadData = param.payload;
@@ -613,6 +627,7 @@ class PacketFactory
             }
 
             IPv4Packet ipPacket = new IPv4Packet(param.sIP, param.dIP);
+            if (param.IPv4Frag) { ipPacket.FragmentFlags = (int)1; }
             ipPacket.PayloadPacket = icmpPacket;
             ipPacket.Checksum = ipPacket.CalculateIPChecksum();
             ret = new EthernetPacket(param.sMAC, param.dMAC, EthernetPacketType.IpV4);
@@ -632,6 +647,7 @@ class PacketFactory
             {
                 ret = new EthernetPacket(param.sMAC, param.dMAC, EthernetPacketType.IpV4);
                 IPv4Packet ipPacket = new IPv4Packet(param.sIP, param.dIP);
+                if (param.IPv4Frag) { ipPacket.FragmentFlags = (int)1; }
                 ipPacket.Protocol = param.IPProtocol;
                 ipPacket.PayloadData = param.payload;
                 ipPacket.UpdateCalculatedValues();
